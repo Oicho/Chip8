@@ -178,7 +178,7 @@ void Chip::mathOperation(unsigned short opcode, int x, int y) {
 void Chip::loadROM(std::string path) {
     char* pmemory = (char*) &memory[0x200];
     std::streampos size;
-    std::ifstream file("TICTAC", std::ios::in | std::ios::binary | std::ios::ate);
+    std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
     if (file.is_open())
     {
         size = file.tellg();
@@ -187,6 +187,8 @@ void Chip::loadROM(std::string path) {
         file.close();
 
         std::cout << "the entire file content is in memory";
-
+    }
+    else {
+        std::cerr << "Unable to open file at " << path << std::endl;
     }
 }

@@ -14,7 +14,7 @@ int main(int argc, char* args[])
 	//The window we'll be rendering to
 	SDL_Window* window = NULL;
 	Chip c;
-	//c.loadROM("ROM/TITAC");
+	c.loadROM("ROM\\TICTAC");
 	std::cout << sizeof(unsigned short) << std::endl;
 	//The surface contained by the window
 	SDL_Surface* screenSurface = NULL;
