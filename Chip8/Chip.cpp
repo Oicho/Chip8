@@ -19,10 +19,20 @@ unsigned char chip8_fontset[80] =
     0xF0, 0x80, 0xF0, 0x80, 0x80  //F
 };
 
+Chip::Chip() {
+
+}
+
+Chip::~Chip() {
+
+}
+
 void Chip::cycle() {
     unsigned short opcode = (this->memory[this->programCounter] << 8) + this->memory[this->programCounter];
     int x = (opcode & 0x0F00) >> 8;
     int y = (opcode & 0x00F0) >> 4;
+    int randomNumber = 42;
+
     switch (opcode & 0xF000) {
         case 0x0000:
             if (opcode == 0x00E0) {
@@ -83,7 +93,6 @@ void Chip::cycle() {
             break;
         case 0xC000:
             // TODO real random number
-            int randomNumber = 42;
             this->V[x] = randomNumber & (opcode & 0x00FF);
             break;
         case 0xD000:
@@ -100,18 +109,20 @@ void Chip::cycle() {
 }
 
 void Chip::memoryDump(int maxOffset) {
-    for (size_t i; i <= maxOffset; i++) {
+    for (size_t i = 0; i <= maxOffset; i++) {
         this->memory[this->I + i] = this->V[i];
     }
 }
 
 void Chip::memoryLoad(int maxOffset) {
-    for (size_t i; i <= maxOffset; i++) {
+    for (size_t i = 0; i <= maxOffset; i++) {
         this->V[i] = this->memory[this->I + i];
     }
 }
 
 void Chip::mathOperation(unsigned short opcode, int x, int y) {
+    unsigned char vx = this->V[x];
+
     switch (opcode & 0x000F)
     {
     case 0x0:
@@ -135,7 +146,6 @@ void Chip::mathOperation(unsigned short opcode, int x, int y) {
             this->V[0xF] = 0;
         break;
     case 0x5:
-        unsigned char vx = this->V[x];
         this->V[x] -= this->V[y];
         if (this->V[x] > vx)
             // borrow
@@ -148,13 +158,35 @@ void Chip::mathOperation(unsigned short opcode, int x, int y) {
         this->V[x] = this->V[x] >> 1;
         break;
     case 0x7:
+        if (this->V[y] > this->V[x])
+            this->V[0xF] = 1;
+        else
+            this->V[0xF] = 0;
+
         this->V[x] = this->V[y] - this->V[x];
-        // TODO V F
-        break;
+        break;  
     case 0xE:
-        this->V[x] = this->V[x] << 1;\
+        this->V[0xF] = this->V[x] & 0x80;
+        this->V[x] = this->V[x] << 1;
+
         break;
     default:
         break;
+    }
+}
+
+void Chip::loadROM(std::string path) {
+    char* pmemory = (char*) &memory[0x200];
+    std::streampos size;
+    std::ifstream file("TICTAC", std::ios::in | std::ios::binary | std::ios::ate);
+    if (file.is_open())
+    {
+        size = file.tellg();
+        file.seekg(0, std::ios::beg);
+        file.read(pmemory, size);
+        file.close();
+
+        std::cout << "the entire file content is in memory";
+
     }
 }

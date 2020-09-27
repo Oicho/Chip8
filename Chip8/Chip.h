@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <fstream>
 
 class Chip
 {
@@ -10,7 +11,7 @@ public:
 	Chip();
 	~Chip();
 	void cycle();
-	void loadROM(std::string str);
+	void loadROM(std::string path);
 
 private:
 	void memoryDump(int maxOffset);
