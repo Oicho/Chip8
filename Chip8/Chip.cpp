@@ -1,4 +1,8 @@
 #include "Chip.h"
+#include "Graphics.h"
+#include <random>
+
+
 unsigned char chip8_fontset[80] =
 {
     0xF0, 0x90, 0x90, 0x90, 0xF0, //0
@@ -19,27 +23,49 @@ unsigned char chip8_fontset[80] =
     0xF0, 0x80, 0xF0, 0x80, 0x80  //F
 };
 
-Chip::Chip() {
+Chip::Chip() : screen(64, std::vector<bool>(32)) {
+    for (size_t i = 0; i < 80; i++) {
+        this->memory[fontLocation + i] = chip8_fontset[i];
+    }
+    //this->screen[0][0] = true;
+    //this->screen[31][15] = true;
+    //this->screen[63][31] = true;
 
-}
+
+}   
 
 Chip::~Chip() {
 
 }
 
+std::vector<std::vector<bool>> Chip::getScreen() {
+    return this->screen;
+}
+
+void Chip::clearScreen() {
+    for (size_t i = 0; i < this->screen.size(); i++) {
+        for (size_t j = 0; j < this->screen[1].size(); j++) {
+            this->screen[i][j] = false;
+        }
+    }
+}
+
 void Chip::cycle() {
-    unsigned short opcode = (this->memory[this->programCounter] << 8) + this->memory[this->programCounter];
+    unsigned short opcode = (this->memory[this->programCounter] << 8) + this->memory[this->programCounter + 1];
     int x = (opcode & 0x0F00) >> 8;
     int y = (opcode & 0x00F0) >> 4;
-    int randomNumber = 42;
+    // TODO MOve this to construct
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> distChar(0, 255);
 
     switch (opcode & 0xF000) {
         case 0x0000:
             if (opcode == 0x00E0) {
-
+                this->clearScreen();
             } else if (opcode == 0x00EE) {
                 if (!this->stack.empty()) {
-                    this->programCounter = this->stack[this->stack.size() - 1] + 2;
+                    this->programCounter = this->stack[this->stack.size() - 1];
                     this->stack.pop_back();
                 }
                 else {
@@ -49,6 +75,7 @@ void Chip::cycle() {
             break;
         case 0x1000:
             this->programCounter = opcode & 0x0FFF;
+            this->programCounter -= 2;
             break;
         case 0x2000:
             this->stack.push_back(this->programCounter);
@@ -92,14 +119,15 @@ void Chip::cycle() {
             this->programCounter = (opcode & 0x0FFF) + this->V[0];
             break;
         case 0xC000:
-            // TODO real random number
-            this->V[x] = randomNumber & (opcode & 0x00FF);
+            this->V[x] = distChar(rng) & (opcode & 0x00FF);
             break;
         case 0xD000:
+            this->draw(this->V[x], this->V[y], opcode & 0x000F);
             break;
         case 0xE000:
             break;
         case 0xF000:
+            this->FOperation(opcode, x, y);
             break;
         default:
             std::cerr << "[ERROR] Unknown opcode " << opcode << std::endl;
@@ -175,6 +203,40 @@ void Chip::mathOperation(unsigned short opcode, int x, int y) {
     }
 }
 
+void Chip::FOperation(unsigned short opcode, int x, int y) {
+    switch (opcode & 0x00FF) {
+    case 0x07:
+        this->V[x] = this->delayTimer;
+        break;
+    case 0x0A:
+        this->V[x] = waitForInput();
+        break;
+    case 0x15:
+        this->delayTimer = this->V[x];
+        break;
+    case 0x18:
+        this->soundTimer = this->V[x];
+        break;
+    case 0x1E:
+        this->I += this->V[x];
+        break;
+    case 0x29:
+        this->I = this->fontLocation + this->V[x] * 5;
+        break;
+    case 0x33:
+        this->memory[this->I + 2] = this->V[x] % 10;
+        this->memory[this->I + 1] = (this->V[x] / 10) % 10;
+        this->memory[this->I] = this->V[x] / 100;
+        break;
+    case 0x55:
+        this->memoryDump(x);
+        break;
+    case 0x65:
+        this->memoryLoad(x);
+        break;
+    }
+}
+
 void Chip::loadROM(std::string path) {
     char* pmemory = (char*) &memory[0x200];
     std::streampos size;
@@ -191,4 +253,21 @@ void Chip::loadROM(std::string path) {
     else {
         std::cerr << "Unable to open file at " << path << std::endl;
     }
+}
+
+void Chip::draw(int x, int y, int n) {
+    unsigned char value;
+    bool isOverlap = false;
+    for (size_t i = 0; i < n && i + y < 32; i++)
+    {
+        value = this->memory[this->I + i];
+        for (size_t j = 0; j < 8 && j + x < 64; j++) {
+            isOverlap = isOverlap || (this->screen[j + x][i + y] && (value & 0b10000000));
+            this->screen[j + x][i + y] = this->screen[j + x][i + y] ^ (value & 0b10000000);
+            value = value << 1;
+        }
+    }
+    if (isOverlap)
+        this->V[0xF] = 1;
+
 }

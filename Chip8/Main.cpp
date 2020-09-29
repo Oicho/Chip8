@@ -4,15 +4,17 @@
 #include <stdio.h>
 #include <iostream>
 #include "Chip.h"
-
+#include "Graphics.h"
 //Screen dimension constants
 const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+const int SCREEN_HEIGHT = 320;
 
 int main(int argc, char* args[])
 {
 	//The window we'll be rendering to
 	SDL_Window* window = NULL;
+	SDL_Event event;
+	bool quit = false;
 	Chip c;
 	c.loadROM("ROM\\TICTAC");
 	std::cout << sizeof(unsigned short) << std::endl;
@@ -27,7 +29,7 @@ int main(int argc, char* args[])
 	else
 	{
 		//Create window
-		window = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		window = SDL_CreateWindow("CHIP8", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 		if (window == NULL)
 		{
 			std::cerr <<"Window could not be created! SDL_Error: " << SDL_GetError() <<std::endl;
@@ -36,13 +38,24 @@ int main(int argc, char* args[])
 		{
 			//Get window surface
 			screenSurface = SDL_GetWindowSurface(window);
-			//Fill the surface white
-			SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0x00, 0xFF, 0xFF));
-			//Update the surface
-			SDL_UpdateWindowSurface(window);
+			while (!quit) {
+				c.cycle();
+				SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0x00, 0x00, 0x00));
+				drawScreen(c.getScreen(), screenSurface);
 
-			//Wait two seconds
-			SDL_Delay(4000);
+				SDL_UpdateWindowSurface(window);
+
+				while (SDL_PollEvent(&event) != 0)
+				{
+					//User requests quit
+					if (event.type == SDL_QUIT)
+					{
+						quit = true;
+					}
+				}
+				
+				//Update the surface
+			}
 		}
 	}
 
