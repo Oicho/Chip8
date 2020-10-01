@@ -56,8 +56,14 @@ int parseInput(SDL_Event event) {
 }
 
 int waitForInput() {
+	//TODO this is not working 
 	SDL_Event event;
-	SDL_WaitEvent(&event);
+	bool isKeydown = false;
+	while (!isKeydown) {
+		SDL_WaitEvent(&event);
+		if (event.type == SDL_KEYDOWN)
+			isKeydown = true;
+	}
 	return parseInput(event);
 }
 

@@ -125,6 +125,7 @@ void Chip::cycle() {
             this->draw(this->V[x], this->V[y], opcode & 0x000F);
             break;
         case 0xE000:
+            // TOFO
             break;
         case 0xF000:
             this->FOperation(opcode, x, y);
