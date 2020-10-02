@@ -27,11 +27,6 @@ Chip::Chip() : screen(64, std::vector<bool>(32)) {
     for (size_t i = 0; i < 80; i++) {
         this->memory[fontLocation + i] = chip8_fontset[i];
     }
-    //this->screen[0][0] = true;
-    //this->screen[31][15] = true;
-    //this->screen[63][31] = true;
-
-
 }   
 
 Chip::~Chip() {
