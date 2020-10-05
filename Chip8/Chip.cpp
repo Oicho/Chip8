@@ -49,6 +49,10 @@ void Chip::cycle() {
     unsigned short opcode = (this->memory[this->programCounter] << 8) + this->memory[this->programCounter + 1];
     int x = (opcode & 0x0F00) >> 8;
     int y = (opcode & 0x00F0) >> 4;
+    if (this->soundTimer != 0)
+        std::cout << "BEEP!" << std::endl;
+    this->checkForInput();
+
     // TODO MOve this to construct
     std::random_device dev;
     std::mt19937 rng(dev());
@@ -120,7 +124,7 @@ void Chip::cycle() {
             this->draw(this->V[x], this->V[y], opcode & 0x000F);
             break;
         case 0xE000:
-            // TOFO
+            this->EOperation(opcode, x, y);
             break;
         case 0xF000:
             this->FOperation(opcode, x, y);
@@ -129,6 +133,8 @@ void Chip::cycle() {
             std::cerr << "[ERROR] Unknown opcode " << opcode << std::endl;
             break;
     }
+    this->soundTimer = this->soundTimer == 0 ? 0 : this->soundTimer - 1;
+    this->delayTimer = this->delayTimer == 0 ? 0 : this->delayTimer - 1;
     this->programCounter += 2;
 }
 
@@ -200,12 +206,20 @@ void Chip::mathOperation(unsigned short opcode, int x, int y) {
 }
 
 void Chip::FOperation(unsigned short opcode, int x, int y) {
+    unsigned char input = 42;
     switch (opcode & 0x00FF) {
     case 0x07:
         this->V[x] = this->delayTimer;
         break;
     case 0x0A:
-        this->V[x] = waitForInput();
+        if (this->keyPressed.empty()) {
+            do {
+                input = waitForInput();
+            } while (input == 42);
+            this->V[x] = input;
+        } else {
+            this->V[x] = this->keyPressed[0];
+        }
         break;
     case 0x15:
         this->delayTimer = this->V[x];
@@ -233,6 +247,24 @@ void Chip::FOperation(unsigned short opcode, int x, int y) {
     }
 }
 
+void Chip::EOperation(unsigned short opcode, int x, int y) {
+    bool keyIsPressed;
+    if (!this->keyPressed.empty())
+        keyIsPressed = std::find(this->keyPressed.begin(), this->keyPressed.end(), this->V[x]) != this->keyPressed.end();
+    else
+        keyIsPressed = false;
+    switch (opcode & 0x00FF) {
+    case 0x9E:
+        if (keyIsPressed)
+            this->programCounter += 2;
+        break;
+    case 0xA1:
+        if (!keyIsPressed)
+            this->programCounter += 2;
+        break;
+    }
+}
+
 void Chip::loadROM(std::string path) {
     char* pmemory = (char*) &memory[0x200];
     std::streampos size;
@@ -244,10 +276,10 @@ void Chip::loadROM(std::string path) {
         file.read(pmemory, size);
         file.close();
 
-        std::cout << "the entire file content is in memory";
+        std::cout << "[DEBUG] Sucessfully loaded ROM: " << path << std::endl;
     }
     else {
-        std::cerr << "Unable to open file at " << path << std::endl;
+        std::cerr << "[ERROR] Unable to open file at " << path << std::endl;
     }
 }
 
@@ -266,4 +298,22 @@ void Chip::draw(int x, int y, int n) {
     if (isOverlap)
         this->V[0xF] = 1;
 
+}
+
+void Chip::checkForInput() {
+    SDL_Event event;
+    unsigned char receivedInput;
+    this->keyPressed.clear();
+    while (SDL_PollEvent(&event) != 0)
+    {
+        //User requests quit
+        if (event.type == SDL_QUIT)
+        {
+            throw 1;
+        } else if (event.type == SDL_KEYDOWN) {
+            receivedInput = parseInput(event);
+            if (receivedInput != 42)
+                this->keyPressed.push_back(receivedInput);
+        }
+    }
 }

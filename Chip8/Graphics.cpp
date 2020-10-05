@@ -2,7 +2,7 @@
 #include "Graphics.h"
 #include "Chip.h"
 
-int parseInput(SDL_Event event) {
+unsigned char parseInput(SDL_Event event) {
 	switch (event.key.keysym.sym) {
 	case SDLK_1:
 		return 1;
@@ -52,11 +52,16 @@ int parseInput(SDL_Event event) {
 	case SDLK_v:
 		return 0xF;
 		break;
+	case SDLK_ESCAPE:
+		throw 1;
+		break;
+	default:
+		return 42;
+		break;
 	}
 }
 
-int waitForInput() {
-	//TODO this is not working 
+unsigned char waitForInput() {
 	SDL_Event event;
 	bool isKeydown = false;
 	while (!isKeydown) {

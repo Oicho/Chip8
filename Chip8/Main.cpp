@@ -17,7 +17,6 @@ int main(int argc, char* args[])
 	bool quit = false;
 	Chip c;
 	c.loadROM("ROM\\TICTAC");
-	std::cout << sizeof(unsigned short) << std::endl;
 	//The surface contained by the window
 	SDL_Surface* screenSurface = NULL;
 
@@ -39,22 +38,15 @@ int main(int argc, char* args[])
 			//Get window surface
 			screenSurface = SDL_GetWindowSurface(window);
 			while (!quit) {
-				c.cycle();
+				try {
+					c.cycle();
+				}
+				catch(int) {
+					quit = true;
+				}
 				SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0x00, 0x00, 0x00));
 				drawScreen(c.getScreen(), screenSurface);
-
 				SDL_UpdateWindowSurface(window);
-
-				while (SDL_PollEvent(&event) != 0)
-				{
-					//User requests quit
-					if (event.type == SDL_QUIT)
-					{
-						quit = true;
-					}
-				}
-				
-				//Update the surface
 			}
 		}
 	}

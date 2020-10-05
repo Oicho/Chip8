@@ -8,7 +8,6 @@
 class Chip
 {
 public:
-	void countDown();
 	Chip();
 	~Chip();
 	void cycle();
@@ -24,9 +23,13 @@ private:
 
 	void mathOperation(unsigned short opcode, int x, int y);
 	void FOperation(unsigned short opcode, int x, int y);
+	void EOperation(unsigned short opcode, int x, int y);
 
-	unsigned char delayTimer = 60;
-	unsigned char soundTimer = 60;
+
+	void checkForInput();
+
+	unsigned char delayTimer = 0;
+	unsigned char soundTimer = 0;
 	const unsigned short fontLocation = 0;
 	unsigned short programCounter = 0x200;
 	unsigned char V[16];
